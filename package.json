@@ -1,0 +1,16 @@
+{
+  "name": "webrtc-local",
+  "version": "1.0.0",
+  "description": "p2p in local network",
+  "scripts": {
+    "dev": "node index.js"
+  },
+  "main": "index.js",
+  "author": "xsm",
+  "license": "MIT",
+  "devDependencies": {
+    "express": "^4.17.1",
+    "ip": "^1.1.8",
+    "ws": "^8.13.0"
+  }
+}
