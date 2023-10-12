@@ -67,24 +67,90 @@
   <body>
     <div class="container">
       <div class="video-box">
-        <video id="remote-video"></video>
-        <video id="local-video"></video>
+        <video id="remote-video" autoplay muted></video>
+        <video id="local-video" autoplay muted></video>
         <button class="start-button" id="startLive">start</button>
       </div>
     </div>
     <div>
-      <label>输入本地信令服务地址（ws）：</label>
-    <input id="wsUrl" value="ws://localhost:8080"></input>
+      <label>Codec：</label>
+      <input id="videoCodec" value="H264"></input>
     </div>
     <div>
-      <label>选取视频CODEC（浏览器支持）：</label>
-      <input id="videoCodec" value="VP8"></input>
+      <label>Screen Share Settings</label>
+      <input id="screenWidth" value="1280"></input>
+      <input id="screenHeight" value="720"></input>
+    </div>
+    <div>
+      <div>Update Screen Share Settings: </div>
+      <label>ScreenFrameRate min:</label>
+      <input id="ScreenFrameRate_min" value="15"></input>
+      <label>ScreenFrameRate max:</label>
+      <input id="ScreenFrameRate_max" value="15"></input>
+      <button id="update_screenshare">update</button>
+    </div>
+    <div>
+      <div> ----------------Stats: (outbound) ----------------</div>
+      <div>
+        <label>Send frameWidth:</label>
+        <label id="s_frameWidth"></label>
+      </div>
+      <div>
+        <label>Send frameHeight:</label>
+        <label id="s_frameHeight"></label>
+      </div>
+      <div>
+        <label>Send framesPerSecond:</label>
+        <label id="s_framesPerSecond"></label>
+      </div>
+      <div>
+        <label>Send framesSent:</label>
+        <label id="s_framesSent"></label>
+      </div>
+      <div>
+        <label>Send framesEncoded:</label>
+        <label id="s_framesEncoded"></label>
+      </div>    
+    </div>
+    <div>
+      <div> ----------------Stats: (media-source) ----------------</div>
+      <div>
+        <label>width:</label>
+        <label id="c_width"></label>
+      </div>
+      <div>
+        <label>height:</label>
+        <label id="c_height"></label>
+      </div>
+      <div>
+        <label>framesPerSecond:</label>
+        <label id="c_framesPerSecond"></label>
+      </div>
     </div>
     <script type="module">
-      import { startLive, sendVideo } from "./src/index.js";
-      document.getElementById("startLive").onclick = () => {
-        startLive();
+      import { startLive, sendVideo,sendMedia,stopSendMedia,stopSendVideo,sendScreenShare,updateScreenShare } from "./src/index.js";
+      document.getElementById("startLive").onclick = async () => {
+        await startLive();
       };
+      document.getElementById("update_screenshare").onclick = async () => {
+        await updateScreenShare();
+      };
+      
+      // document.getElementById("sendMedia").onclick = async () => {
+      //   await sendMedia();
+      // };
+      // document.getElementById("sendVideo").onclick = async () => {
+      //   await sendVideo();
+      // };
+      // document.getElementById("sendScreenShare").onclick = async () => {
+      //   await sendScreenShare();
+      // };
+      // document.getElementById("sendAudio").onclick = async () => {
+      //   await sendAudio();
+      // };
+      // document.getElementById("stopSendVideo").onclick = async () => {
+      //   await stopSendVideo();
+      // };
     </script>
   </body>
 </html>

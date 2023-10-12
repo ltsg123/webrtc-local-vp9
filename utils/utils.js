@@ -20,3 +20,10 @@ function getDateStr() {
     date.toTimeString().split(" ")[0] + ":" + date.getMilliseconds();
   return dateStr;
 }
+
+export function getRandomString(length = 7, prefix) {
+  const str = Math.random().toString(16).substr(2, length).toLowerCase();
+  if (str.length === length) return `${prefix}${str}`;
+
+  return `${prefix}${str}` + getRandomString(length - str.length, "");
+}

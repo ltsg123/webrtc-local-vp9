@@ -1,10 +1,9 @@
-import { log } from "../utils/utils.js";
+import { log, getRandomString } from "../utils/utils.js";
 import "../utils/sdp_parser.js";
 
 const { parse, print } = window["sdp-parser"];
-const CODEC = "H265";
+const CODEC = "H264";
 
-let WEBSOCKET = "ws://localhost:8080";
 
 const PeerConnection =
   self.RTCPeerConnection ||
@@ -18,74 +17,43 @@ export class Peer {
   channel;
   isFirst = false;
   answer;
+  remoteSDP;
+  enc = new TextEncoder();
+  transceiverMap = new Map();
   constructor(type, element, remoteEl) {
     this.type = type;
     this.element = element;
-    this.peer.ontrack = (e) => {
-      if (e && e.streams) {
-        const tracks = this.peer
-          .getTransceivers()
-          .map((trans) => trans.receiver.track);
-        const mediastream = new MediaStream();
-        const remoteTrack = tracks[tracks.length - 1];
-        remoteTrack.onended = () => {
-          console.error("onended", remoteTrack.readyState);
-        };
-        mediastream.addTrack(remoteTrack);
-        log("收到对方音频/视频流数据...");
-        remoteEl.srcObject = mediastream;
-      }
-    };
+    if (type === "answer") {
+      this.peer.ontrack = (e) => {
+        if (e && e.streams) {
+          const tracks = this.peer
+            .getTransceivers()
+            .map((trans) => trans.receiver.track);
+          const mediastream = new MediaStream([tracks[tracks.length - 1]]);
+
+          log("收到对方音频/视频流数据...");
+          remoteEl.srcObject = mediastream;
+        }
+      };
+    }
 
     this.peer.onicecandidate = (e) => {
       if (e.candidate) {
         log("搜集并发送候选人", `${type}_ice`);
-        this.socket.send(
-          JSON.stringify({
-            type: `${this.type}_ice`,
-            iceCandidate: e.candidate,
-          })
-        );
+        this.type === "offer" ? answerPeer.peer.addIceCandidate(e.candidate) : offerPeer.peer.addIceCandidate(e.candidate) 
       } else {
         log("候选人收集完成！");
       }
     };
-  }
 
-  async initWebsocket() {
-    return new Promise((resolve, reject) => {
-      const socket = new WebSocket(
-        document.querySelector("#wsUrl").value ?? WEBSOCKET
-      );
-      this.socket = socket;
-      socket.onopen = () => {
-        log("信令通道创建成功！");
-        resolve();
-      };
-      socket.onerror = () => {
-        log("信令通道创建失败！");
-        reject("信令通道创建失败！");
-      };
-      socket.onmessage = (e) => {
-        log("收到消息", e.data);
-        const { type, sdp, iceCandidate } = JSON.parse(e.data);
-        if (type === "answer") {
-          this.peer.setRemoteDescription(
-            new RTCSessionDescription({ type, sdp })
-          );
-        } else if (type === "answer_ice") {
-          this.peer.addIceCandidate(iceCandidate);
-        } else if (type === "offer") {
-          this.startLive(new RTCSessionDescription({ type, sdp }));
-        } else if (type === "offer_ice") {
-          this.peer.addIceCandidate(iceCandidate);
-        } else if (type === "start_live" && this.type === "offer") {
-          this.pubVideo();
-        }
-      };
-    });
+    this.peer.onconnectionstatechange = (state) => {
+      if (this.peer.connectionState === "connected") {
+        this.peer.onicecandidate = null;
+        console.log("[webapp] pc connected");
+      }
+    };
   }
-
+  
   async pubVideo() {
     log("尝试调取本地摄像头");
     const stream = await navigator.mediaDevices.getUserMedia({
@@ -101,15 +69,26 @@ export class Peer {
     this.startLive();
   }
 
+  async connect() {
+    const videoTransceiver = this.peer.addTransceiver("video", {
+      direction: "sendonly",
+    });
+    const audioTransceiver = this.peer.addTransceiver("audio", {
+      direction: "sendonly",
+    });
+    await this.startLive();
+  }
+
   async startLive(offerSdp) {
     if (!offerSdp) {
       log("创建本地SDP");
       const offer = await this.peer.createOffer();
-      offer.sdp = this.selectCodec(offer.sdp);
       await this.peer.setLocalDescription(offer);
-
+      const sessionDesc = parse(offer.sdp);
+      offer.sdp = print(sessionDesc);
       log(`传输发起方本地SDP`, offer);
-      this.socket.send(JSON.stringify(offer));
+
+      answerPeer.startLive(offer);
     } else {
       log("接收到发送方SDP");
       await this.peer.setRemoteDescription(offerSdp);
@@ -119,9 +98,32 @@ export class Peer {
       answer.sdp = this.selectCodec(answer.sdp);
 
       log(`传输接收方（应答）SDP`, answer);
-      this.socket.send(JSON.stringify(answer));
       await this.peer.setLocalDescription(answer);
+      const sessionDesc = parse(answer.sdp);
+      answer.sdp = print(sessionDesc);
+      offerPeer.peer.setRemoteDescription(answer);
       log("sdp之后", this.peer.connectionState);
+    }
+  }
+
+  async sendMedia(track, kind) {
+    if (this.transceiverMap.has(kind)) {
+      throw new Error(`has track in kind ${kind}`);
+    }
+    const transceiver = this.peer.addTransceiver(track, {
+      direction: "sendonly",
+    });
+    this.transceiverMap.set(kind, transceiver);
+    this.startLive();
+  }
+
+  async stopSend(kind) {
+    const transceiver = this.transceiverMap.get(kind);
+    if (transceiver) {
+      transceiver.stop();
+      this.transceiverMap.delete(kind);
+      log("stop send kind", kind);
+      this.startLive();
     }
   }
 
