@@ -5,10 +5,85 @@ import "../utils/sdp_parser.js";
 const type = "offer";
 
 const localVideo = document.querySelector("#local-video");
+localVideo.src = "./test.mp4";
+localVideo.addEventListener("timeupdate", () => {
+  if (localVideo.currentTime > 10) {
+    localVideo.currentTime = 1;
+  }
+});
 const remoteVideo = document.querySelector("#remote-video");
 const button = document.querySelector(".start-button");
+remoteVideo.setAttribute("playsinline", "");
+localVideo.setAttribute("playsinline", "");
+
 const localTransceivers = [];
 let localVideoTrack;
+
+function getStream() {
+  const canvas = document.createElement("canvas");
+  canvas.width = 700;
+  canvas.height = 400;
+  canvas.style.width = "700px";
+  canvas.style.height = "400px";
+  canvas.style.backgroundColor = "yellow";
+  const ctx = canvas.getContext("2d");
+
+  let numberToDraw = 0;
+  // 绘制数字到Canvas
+  function drawNumber(number) {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.font = "72px Arial";
+    ctx.fillStyle = "black";
+    ctx.fillText(number, 300, 200);
+
+    // requestAnimationFrame(() => {
+    //   if (numberToDraw > 1000) {
+    //     numberToDraw = 0;
+    //   }
+    //   drawNumber(numberToDraw++);
+    // });
+  }
+  setInterval(() => {
+    drawNumber(numberToDraw++);
+  }, 250);
+
+  document.body.appendChild(canvas);
+  // 创建并显示MediaStream
+  // return canvas.captureStream(15);
+  return getTrack(canvas);
+}
+
+function getTrack(canvas) {
+  const videoTrackGenerator = new MediaStreamTrackGenerator({ kind: "video" });
+  const writer = videoTrackGenerator.writable.getWriter();
+
+  let videoFrame;
+  let transformController = undefined;
+  let startTime = Date.now();
+  const destroy = () => {
+    if (injectInterval) {
+      clearInterval(injectInterval);
+      injectInterval = undefined;
+    }
+    if (videoFrame) {
+      videoFrame.close();
+      videoFrame = undefined;
+    }
+    track.stop();
+    transformController = undefined;
+    videoTrackGenerator.removeEventListener("ended", destroy);
+  };
+  let timestamp = 0;
+  let injectInterval = window.setInterval(async () => {
+    videoFrame = new VideoFrame(canvas, { timestamp: (timestamp += 250) });
+    await writer.write(videoFrame);
+    videoFrame.close();
+  }, 250);
+  /** track销毁，释放内存 */
+  videoTrackGenerator.addEventListener("ended", destroy);
+
+  return videoTrackGenerator;
+}
 
 localVideo.onloadeddata = () => {
   log("播放本地视频");
@@ -161,14 +236,15 @@ export async function sendMedia() {
 
 export async function sendVideo() {
   try {
-    log("尝试调取本地摄像头");
-    const stream = await navigator.mediaDevices.getUserMedia({
-      video: true,
-      audio: false,
-    });
-    log("摄像头获取成功！");
-    const videoTrack = stream.getVideoTracks()[0];
-    localVideo.srcObject = stream;
+    // log("尝试调取本地摄像头");
+    // const stream = await navigator.mediaDevices.getUserMedia({
+    //   video: true,
+    //   audio: false,
+    // });
+    // log("摄像头获取成功！");
+    // const videoTrack = stream.getVideoTracks()[0];
+    // localVideo.srcObject = new MediaStream([videoTrack]);
+    const videoTrack = localVideo.captureStream().getVideoTracks()[0];
     offerPeer.sendMedia(videoTrack, "video");
   } catch (e) {
     console.error("摄像头获取失败！", e);

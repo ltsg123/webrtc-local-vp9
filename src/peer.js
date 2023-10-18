@@ -29,7 +29,6 @@ export class Peer {
             .getTransceivers()
             .map((trans) => trans.receiver.track);
           const mediastream = new MediaStream([tracks[tracks.length - 1]]);
-
           log("收到对方音频/视频流数据...");
           remoteEl.srcObject = mediastream;
         }
