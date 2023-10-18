@@ -158,6 +158,10 @@
         <label id="c_framesPerSecond"></label>
       </div>
     </div>
+    <script src="./vconsole.js"></script>
+    <script>
+      const vconsole = new VConsole();
+    </script>
     <script type="module">
       import { startLive, sendVideo,sendMedia,stopSendMedia,stopSendVideo,sendScreenShare,updateScreenShare } from "./src/index.js";
       document.getElementById("startLive").onclick = async () => {

@@ -5,12 +5,12 @@ import "../utils/sdp_parser.js";
 const type = "offer";
 
 const localVideo = document.querySelector("#local-video");
-localVideo.src = "./test.mp4";
-localVideo.addEventListener("timeupdate", () => {
-  if (localVideo.currentTime > 10) {
-    localVideo.currentTime = 1;
-  }
-});
+// localVideo.src = "./test.mp4";
+// localVideo.addEventListener("timeupdate", () => {
+//   if (localVideo.currentTime > 10) {
+//     localVideo.currentTime = 1;
+//   }
+// });
 const remoteVideo = document.querySelector("#remote-video");
 const button = document.querySelector(".start-button");
 remoteVideo.setAttribute("playsinline", "");
@@ -237,14 +237,13 @@ export async function sendMedia() {
 export async function sendVideo() {
   try {
     // log("尝试调取本地摄像头");
-    // const stream = await navigator.mediaDevices.getUserMedia({
-    //   video: true,
-    //   audio: false,
-    // });
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: true,
+      audio: false,
+    });
     // log("摄像头获取成功！");
-    // const videoTrack = stream.getVideoTracks()[0];
-    // localVideo.srcObject = new MediaStream([videoTrack]);
-    const videoTrack = localVideo.captureStream().getVideoTracks()[0];
+    const videoTrack = stream.getVideoTracks()[0];
+    localVideo.srcObject = new MediaStream([videoTrack]);
     offerPeer.sendMedia(videoTrack, "video");
   } catch (e) {
     console.error("摄像头获取失败！", e);
