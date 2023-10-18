@@ -74,7 +74,7 @@
     </div>
     <div>
       <label>Codec：</label>
-      <input id="videoCodec" value="H264"></input>
+      <input id="videoCodec" value="VP9"></input>
     </div>
     <div>
       <label>Screen Share Settings</label>
@@ -91,6 +91,10 @@
     </div>
     <div>
       <div> ----------------Stats: (outbound) ----------------</div>
+      <div>
+        <label>Send codec:</label>
+        <label id="s_codec"></label>
+      </div>
       <div>
         <label>Send frameWidth:</label>
         <label id="s_frameWidth"></label>
@@ -113,6 +117,33 @@
       </div>    
     </div>
     <div>
+      <div> ----------------Stats: (inbound) ----------------</div>
+      <div>
+        <label>Receive codec:</label>
+        <label id="r_codec"></label>
+      </div>
+      <div>
+        <label>Receive frameWidth:</label>
+        <label id="r_frameWidth"></label>
+      </div>
+      <div>
+        <label>Receive frameHeight:</label>
+        <label id="r_frameHeight"></label>
+      </div>
+      <div>
+        <label>Receive framesPerSecond:</label>
+        <label id="r_framesPerSecond"></label>
+      </div>
+      <div>
+        <label>Receive framesReceived:</label>
+        <label id="r_framesReceived"></label>
+      </div>
+      <div>
+        <label>Receive framesDecoded:</label>
+        <label id="r_framesDecoded"></label>
+      </div>    
+    </div>
+    <div>
       <div> ----------------Stats: (media-source) ----------------</div>
       <div>
         <label>width:</label>
@@ -132,9 +163,9 @@
       document.getElementById("startLive").onclick = async () => {
         await startLive();
       };
-      document.getElementById("update_screenshare").onclick = async () => {
-        await updateScreenShare();
-      };
+      // document.getElementById("update_screenshare").onclick = async () => {
+      //   await updateScreenShare();
+      // };
       
       // document.getElementById("sendMedia").onclick = async () => {
       //   await sendMedia();

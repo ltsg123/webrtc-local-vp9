@@ -2,8 +2,7 @@ import { log, getRandomString } from "../utils/utils.js";
 import "../utils/sdp_parser.js";
 
 const { parse, print } = window["sdp-parser"];
-const CODEC = "H264";
-
+const CODEC = "VP9";
 
 const PeerConnection =
   self.RTCPeerConnection ||
@@ -40,7 +39,9 @@ export class Peer {
     this.peer.onicecandidate = (e) => {
       if (e.candidate) {
         log("搜集并发送候选人", `${type}_ice`);
-        this.type === "offer" ? answerPeer.peer.addIceCandidate(e.candidate) : offerPeer.peer.addIceCandidate(e.candidate) 
+        this.type === "offer"
+          ? answerPeer.peer.addIceCandidate(e.candidate)
+          : offerPeer.peer.addIceCandidate(e.candidate);
       } else {
         log("候选人收集完成！");
       }
@@ -53,7 +54,7 @@ export class Peer {
       }
     };
   }
-  
+
   async pubVideo() {
     log("尝试调取本地摄像头");
     const stream = await navigator.mediaDevices.getUserMedia({

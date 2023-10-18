@@ -27,8 +27,8 @@ export async function startLive() {
 
   window.offerPeer = offerPeer;
   window.answerPeer = answerPeer;
-  // sendMedia();
-  sendScreenShare();
+  sendVideo();
+  // sendScreenShare();
 
   button.style.display = "none";
   monitorStats();
@@ -45,11 +45,21 @@ function monitorStats() {
   const s_framesPerSecond = document.getElementById("s_framesPerSecond");
   const s_framesSent = document.getElementById("s_framesSent");
   const s_framesEncoded = document.getElementById("s_framesEncoded");
+  const s_codec = document.getElementById("s_codec");
+
+  const r_frameWidth = document.getElementById("r_frameWidth");
+  const r_frameHeight = document.getElementById("r_frameHeight");
+  const r_framesPerSecond = document.getElementById("r_framesPerSecond");
+  const r_framesReceived = document.getElementById("r_framesReceived");
+  const r_framesDecoded = document.getElementById("r_framesDecoded");
+  const r_codec = document.getElementById("r_codec");
 
   const c_width = document.getElementById("c_width");
   const c_height = document.getElementById("c_height");
   const c_framesPerSecond = document.getElementById("c_framesPerSecond");
 
+  let outboundCodecId = undefined;
+  let inboundCodecId = undefined;
   statsTrigger = window.setInterval(() => {
     offerPeer.peer.getStats().then((stats) => {
       stats.forEach((report) => {
@@ -59,6 +69,7 @@ function monitorStats() {
           s_framesPerSecond.innerHTML = report.framesPerSecond;
           s_framesSent.innerHTML = report.framesSent;
           s_framesEncoded.innerHTML = report.framesEncoded;
+          outboundCodecId = report.codecId;
           console.error("outbound-rtp", report);
         }
         if (report.type === "media-source" && report.kind === "video") {
@@ -66,6 +77,27 @@ function monitorStats() {
           c_height.innerHTML = report.height;
           c_framesPerSecond.innerHTML = report.framesPerSecond;
           console.error("media-source", report);
+        }
+        if (report.type === "codec" && report.id === outboundCodecId) {
+          s_codec.innerHTML = report.mimeType;
+        }
+      });
+    });
+
+    answerPeer.peer.getStats().then((stats) => {
+      stats.forEach((report) => {
+        if (report.type === "inbound-rtp" && report.kind === "video") {
+          r_frameWidth.innerHTML = report.frameWidth;
+          r_frameHeight.innerHTML = report.frameHeight;
+          r_framesPerSecond.innerHTML = report.framesPerSecond;
+          r_framesReceived.innerHTML = report.framesReceived;
+          r_framesDecoded.innerHTML = report.framesDecoded;
+          inboundCodecId = report.codecId;
+          console.error("inbound-rtp", report);
+        }
+
+        if (report.type === "codec" && report.id === inboundCodecId) {
+          r_codec.innerHTML = report.mimeType;
         }
       });
     });
@@ -145,9 +177,18 @@ export async function sendVideo() {
 }
 
 export async function sendScreenShare() {
+  // const config = {
+  //   width: +document.getElementById("screenWidth").value || 1280,
+  //   height: +document.getElementById("screenHeight").value || 720,
+  // };
   const config = {
-    width: +document.getElementById("screenWidth").value || 1280,
-    height: +document.getElementById("screenHeight").value || 720,
+    width: {
+      // exact: 1920,
+      ideal: 2560,
+    },
+    height: {
+      ideal: 1440,
+    },
   };
   log("尝试调取本地屏幕共享", config);
   const stream = await navigator.mediaDevices.getDisplayMedia({
